@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>TURNO DA MADRUGADA — Horror Psicológico CCTV</title>
+  <meta name="description" content="Turno da Madrugada: Experiência imersiva de terror psicológico em circuito fechado de TV. Monitore as câmeras, rastreie presenças perturbadoras e sobreviva até às 04:00.">
+  <meta name="theme-color" content="#030406">
+
+  <style>
+    /* ==========================================================================
+       1. SISTEMA DE DESIGN & PALETA PSICOLÓGICA (FOUND FOOTAGE / CCTV)
+       ========================================================================== */
+    :root {
+      --bg-dark: #030406;
+      --bg-terminal: #07090d;
+      --bg-panel: #0b0e14;
+      --bg-panel-hover: #121722;
+      --border-cctv: #1b2230;
+      --border-focus: #3d4a63;
+      --cctv-green: #38ef7d;
+      --cctv-green-dim: rgba(56, 239, 125, 0.4);
+      --cctv-amber: #f59e0b;
+      --cctv-red: #dc2626;
+      --cctv-red-bright: #ef4444;
+      --text-main: #e2e8f0;
+      --text-muted: #64748b;
+      --text-dim: #334155;
+      --font-mono: 'Courier New', 'Consolas', 'Courier', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    #app {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-dark);
+      overflow: hidden;
+    }
+
+    /* ==========================================================================
+       2. WORKSPACE DE MONITORAMENTO (DESKTOP & MOBILE SPLIT)
+       ========================================================================== */
+    .cctv-workspace {
+      flex: 1;
+      display: flex;
+      flex-direction: row;
+      min-height: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+
+    /* Área do Monitor Principal de CCTV */
+    .viewport-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: #010203;
+      overflow: hidden;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .monitor-bezel {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      background: #000;
+      cursor: crosshair;
+    }
+
+    /* Frame 4:3 com visual de gravação real */
+    .camera-display {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 4 / 3;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      background: #000;
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.95);
+    }
+
+    /* Imagem fotográfica de fundo do CCTV */
+    .camera-feed-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: contrast(115%) brightness(92%) saturate(85%);
+      transition: opacity 0.4s ease, filter 0.3s ease;
+      will-change: opacity, filter;
+    }
+
+    /* Camada para efeitos de anomalia fotográfica sutil */
+    .anomaly-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+      mix-blend-mode: normal;
+    }
+    .anomaly-layer.visible {
+      opacity: 1;
+    }
+
+    /* Efeitos de lente CCTV: Scanlines, Vinheta, Ruído, Grãos */
+    .crt-scanlines {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 25;
+      background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%, 
+        rgba(0, 0, 0, 0.42) 50%
+      ), linear-gradient(
+        90deg,
+        rgba(255, 0, 0, 0.03),
+        rgba(0, 255, 0, 0.015),
+        rgba(0, 0, 255, 0.03)
+      );
+      background-size: 100% 3px, 6px 100%;
+      opacity: 0.85;
+    }
+
+    .crt-vignette {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 26;
+      box-shadow: inset 0 0 100px rgba(0,0,0,0.88), inset 0 0 160px rgba(0,0,0,0.95);
+    }
+
+    #static-canvas {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 24;
+      opacity: 0.16;
+      mix-blend-mode: screen;
+      transition: opacity 0.3s ease;
+    }
+
+    /* Efeitos de interferência dramática */
+    .glitch-flash {
+      animation: glitchHit 0.28s ease-out;
+    }
+    @keyframes glitchHit {
+      0% { filter: invert(0.9) brightness(2.5) contrast(2); transform: scale(1.02); }
+      30% { filter: invert(0) brightness(0.3) saturate(0); transform: translate(-4px, 3px); }
+      65% { filter: invert(0.6) hue-rotate(90deg); transform: translate(3px, -2px); }
+      100% { filter: none; transform: none; }
+    }
+
+    .camera-shake {
+      animation: camShake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes camShake {
+      10%, 90% { transform: translate3d(-3px, 2px, 0); }
+      20%, 80% { transform: translate3d(4px, -3px, 0); }
+      30%, 50%, 70% { transform: translate3d(-4px, 3px, 0); }
+      40%, 60% { transform: translate3d(3px, -2px, 0); }
+    }
+
+    /* ==========================================================================
+       3. OSD (ON-SCREEN DISPLAY) DO SISTEMA NIGHTWATCH
+       ========================================================================== */
+    .cctv-osd-header {
+      position: absolute;
+      top: 14px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 30;
+      pointer-events: none;
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 6px #000, 0 0 2px var(--cctv-green);
+    }
+
+    .osd-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(5, 7, 10, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 4px 10px;
+      border-radius: 2px;
+      backdrop-filter: blur(4px);
+    }
+
+    .rec-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--cctv-red-bright);
+      font-weight: bold;
+    }
+    .rec-dot {
+      width: 9px;
+      height: 9px;
+      background: var(--cctv-red-bright);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--cctv-red-bright);
+      animation: blinkRec 1.2s infinite steps(2, start);
+    }
+    @keyframes blinkRec {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    .cctv-osd-footer {
+      position: absolute;
+      bottom: 14px;
+      left: 18px;
+      right: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      z-index: 30;
+      pointer-events: none;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-shadow: 0 0 5px #000;
+    }
+
+    /* Retículo tático de foco e inspeção */
+    .tactical-reticle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      pointer-events: none;
+      z-index: 28;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+    .tactical-reticle::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.35);
+      border-radius: 50%;
+    }
+
+    /* Banner de feedback OSD */
+    .osd-alert-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      padding: 14px 28px;
+      background: rgba(7, 9, 13, 0.95);
+      border: 2px solid var(--border-cctv);
+      border-radius: 3px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      font-size: 14px;
+      z-index: 35;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.25s ease;
+      text-align: center;
+      text-transform: uppercase;
+      box-shadow: 0 0 35px rgba(0, 0, 0, 0.95);
+    }
+    .osd-alert-card.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .osd-alert-card.verified {
+      border-color: var(--cctv-green);
+      color: var(--cctv-green);
+      box-shadow: 0 0 25px rgba(56, 239, 125, 0.4);
+    }
+    .osd-alert-card.invalid {
+      border-color: var(--cctv-red);
+      color: var(--cctv-red-bright);
+      box-shadow: 0 0 25px rgba(220, 38, 38, 0.5);
+    }
+    .osd-alert-card.pending {
+      border-color: var(--cctv-amber);
+      color: var(--cctv-amber);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.35);
+    }
+
+    /* ==========================================================================
+       4. CONSOLE LATERAL DE CONTROLE TÁTICO (SIDEBAR / BOTTOM PANEL)
+       ========================================================================== */
+    .cctv-control-station {
+      width: 340px;
+      background: var(--bg-panel);
+      border-left: 2px solid var(--border-cctv);
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 14px;
+      z-index: 40;
+      box-shadow: -5px 0 30px rgba(0, 0, 0, 0.85);
+      overflow-y: auto;
+    }
+
+    .station-header {
+      border-bottom: 1px solid var(--border-cctv);
+      padding-bottom: 12px;
+    }
+    .station-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: var(--text-main);
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .station-title span {
+      color: var(--cctv-red);
+    }
+    .station-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+
+    /* Seletor de Câmeras (Matrix de Câmeras) */
+    .camera-matrix-box {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .section-label {
+      font-size: 10px;
+      color: var(--text-muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .cam-buttons-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .btn-cam {
+      padding: 10px 8px;
+      background: var(--bg-terminal);
+      border: 1px solid var(--border-cctv);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      letter-spacing: 1px;
+      border-radius: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+    .btn-cam:hover:not(:disabled) {
+      border-color: var(--border-focus);
+      background: var(--bg-panel-hover);
+      color: var(--text-main);
+    }
+    .btn-cam.active {
+      border-color: var(--cctv-green);
+      background: rgba(56, 239, 125, 0.08);
+      color: var(--cctv-green);
+      box-shadow: 0 0 10px rgba(56, 239, 125, 0.25);
+    }
+    .btn-cam:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      border-style: dashed;
+    }
+    .cam-status-led {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #475569;
+    }
+    .btn-cam.active .cam-status-led {
+      background: var(--cctv-green);
+      box-shadow: 0 0 6px var(--cctv-green);
+    }
+
+    /* Cartões de Status e Informações */
+    .status-cards-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .info-card {
+      background: var(--bg-terminal);
+      border: 1px solid var(--border-cctv);
+      padding: 8px 10px;
+      border-radius: 3px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .card-label {
+      font-size: 9px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+    .card-val {
+      font-size: 14px;
+      font-weight: bold;
+      color: #fff;
+    }
+    .card-val.highlight {
+      color: var(--cctv-green);
+    }
+    .card-val.danger {
+      color: var(--cctv-red-bright);
+    }
+
+    /* Medidor de Tensão Psicológica */
+    .tension-meter-card {
+      background: var(--bg-terminal);
+      border: 1px solid var(--border-cctv);
+      padding: 8px 10px;
+      border-radius: 3px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .tension-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 9px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+    .tension-bar-track {
+      width: 100%;
+      height: 6px;
+      background: #11151f;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .tension-bar-fill {
+      height: 100%;
+      width: 15%;
+      background: linear-gradient(90deg, #10b981, #f59e0b, #ef4444);
+      transition: width 0.4s ease;
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+    }
+
+    /* Terminal de Logs do Sistema */
+    .log-terminal {
+      flex: 1;
+      min-height: 80px;
+      background: #040608;
+      border: 1px solid var(--border-cctv);
+      padding: 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      color: var(--text-muted);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .log-line {
+      line-height: 1.3;
+    }
+    .log-line.log-alert {
+      color: var(--cctv-amber);
+    }
+    .log-line.log-err {
+      color: var(--cctv-red-bright);
+    }
+    .log-line.log-ok {
+      color: var(--cctv-green);
+    }
+
+    /* Botão Principal: REPORTAR ANOMALIA */
+    .btn-action-report {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(180deg, #881313, #5a0909);
+      border: 1px solid #dc2626;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-weight: bold;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 18px rgba(185, 28, 28, 0.4);
+      transition: all 0.2s ease;
+      touch-action: manipulation;
+    }
+    .btn-action-report:hover:not(:disabled) {
+      background: linear-gradient(180deg, #b91c1c, #7f1d1d);
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.6);
+      transform: translateY(-1px);
+    }
+    .btn-action-report:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+    .btn-action-report:disabled {
+      opacity: 0.5;
+      cursor: wait;
+      border-color: #555;
+    }
+
+    /* Botões Utilitários */
+    .utility-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .btn-util {
+      flex: 1;
+      padding: 8px;
+      background: var(--bg-terminal);
+      border: 1px solid var(--border-cctv);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      border-radius: 3px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-util:hover {
+      color: var(--text-main);
+      border-color: var(--border-focus);
+    }
+
+    /* ==========================================================================
+       5. MODAIS & TELAS DE NARRATIVA (TITLE, JUMPSCARE, EPÍLOGO)
+       ========================================================================== */
+    .overlay-backdrop {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(2, 3, 5, 0.96);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .dossier-panel {
+      width: 100%;
+      max-width: 560px;
+      background: #090c12;
+      border: 2px solid #1c2333;
+      border-radius: 6px;
+      padding: 32px 26px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 18px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.95);
+      position: relative;
+    }
+    .dossier-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 2px;
+      background: linear-gradient(90deg, #dc2626, #3b82f6, #dc2626);
+    }
+
+    .game-hero-title {
+      font-size: clamp(22px, 5vw, 34px);
+      font-weight: 900;
+      letter-spacing: 4px;
+      color: #fff;
+      text-transform: uppercase;
+      text-shadow: 0 0 20px rgba(220, 38, 38, 0.7);
+    }
+
+    .game-motto {
+      font-size: 13px;
+      color: #94a3b8;
+      font-style: italic;
+      letter-spacing: 1px;
+    }
+
+    .briefing-box {
+      background: #040609;
+      border: 1px solid #192131;
+      padding: 14px;
+      border-radius: 4px;
+      text-align: left;
+      font-size: 12px;
+      color: #8da2be;
+      line-height: 1.6;
+      width: 100%;
+    }
+    .briefing-box strong {
+      color: #f1f5f9;
+    }
+
+    .btn-cta {
+      padding: 15px 36px;
+      background: linear-gradient(180deg, #b91c1c, #7f1d1d);
+      border: 1px solid #ef4444;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border-radius: 4px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(185, 28, 28, 0.5);
+      transition: all 0.2s;
+    }
+    .btn-cta:hover {
+      background: linear-gradient(180deg, #dc2626, #991b1b);
+      box-shadow: 0 0 30px rgba(239, 68, 68, 0.7);
+      transform: translateY(-2px);
+    }
+
+    /* Tela de Jumpscare Realista */
+    #jumpscare-modal {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #000;
+      z-index: 500;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .jumpscare-viewport {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .jumpscare-creature-photo {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: contrast(160%) brightness(110%) saturate(60%);
+      transform: scale(1.15);
+      will-change: transform, filter;
+    }
+
+    .jumpscare-violent-fx {
+      animation: violentJitter 0.12s infinite alternate;
+    }
+    @keyframes violentJitter {
+      0% { transform: scale(1.18) translate(8px, -6px) skewX(2deg); filter: contrast(240%) brightness(130%) invert(0.1); }
+      50% { transform: scale(1.22) translate(-10px, 8px) skewY(-2deg); filter: contrast(300%) hue-rotate(45deg); }
+      100% { transform: scale(1.16) translate(6px, 10px); filter: contrast(200%) brightness(160%); }
+    }
+
+    .jumpscare-caption-box {
+      position: absolute;
+      bottom: 50px;
+      text-align: center;
+      z-index: 520;
+    }
+    .jumpscare-title {
+      color: #ff2233;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      text-shadow: 0 0 15px #ff0000;
+      margin-bottom: 20px;
+    }
+
+    /* Tela de Epílogo Cinemático */
+    #epilogue-screen {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: #000;
+      z-index: 600;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      text-align: center;
+    }
+
+    /* ==========================================================================
+       6. RESPONSIVIDADE ADAPTATIVA (MOBILE & TABLET)
+       ========================================================================== */
+    @media (max-width: 860px) {
+      .cctv-workspace {
+        flex-direction: column;
+      }
+      .viewport-container {
+        flex: 1;
+        width: 100%;
+        min-height: 0;
+      }
+      .cctv-control-station {
+        width: 100%;
+        height: auto;
+        max-height: 250px;
+        border-left: none;
+        border-top: 2px solid var(--border-cctv);
+        padding: 10px 12px;
+        gap: 8px;
+      }
+      .cam-buttons-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+      }
+      .btn-cam {
+        padding: 6px 4px;
+        font-size: 10px;
+        flex-direction: column;
+        gap: 4px;
+        text-align: center;
+      }
+      .log-terminal {
+        display: none; /* Esconde logs em tela pequena para priorizar controles */
+      }
+      .btn-action-report {
+        padding: 12px;
+        font-size: 12px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .cctv-osd-header {
+        top: 8px; left: 10px; right: 10px; font-size: 10px;
+      }
+      .cctv-osd-footer {
+        bottom: 8px; left: 10px; right: 10px; font-size: 9px;
+      }
+      .status-cards-row {
+        gap: 4px;
+      }
+      .info-card {
+        padding: 4px 6px;
+      }
+      .card-val {
+        font-size: 12px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+
+    <!-- WORKSPACE PRINCIPAL DE VIGILÂNCIA CCTV -->
+    <main class="cctv-workspace">
+
+      <!-- ÁREA CENTRAL DO FEED DA CÂMERA -->
+      <section class="viewport-container" id="cctv-viewport">
+        
+        <div class="monitor-bezel">
+          <div class="camera-display" id="camera-display">
+            
+            <!-- Feed da Câmera Ativa (Fotografia Realista) -->
+            <img class="camera-feed-img" id="camera-feed-img" src="assets/rooms/cam1_normal.jpg" alt="Feed CCTV ao vivo">
+            
+            <!-- Camada de Anomalia Fotográfica / Criatura -->
+            <img class="anomaly-layer" id="anomaly-feed-img" src="assets/rooms/cam1_shadow.jpg" alt="Presença Anômala">
+
+            <!-- Efeitos de CRT & Lente de CFTV -->
+            <div class="crt-scanlines"></div>
+            <div class="crt-vignette"></div>
+            <canvas id="static-canvas"></canvas>
+
+            <!-- Retículo Tático Central -->
+            <div class="tactical-reticle" id="tactical-reticle"></div>
+
+            <!-- OSD Superior -->
+            <div class="cctv-osd-header">
+              <div class="osd-badge">
+                <span class="rec-indicator"><span class="rec-dot"></span> REC</span>
+                <span id="osd-cam-name">CAM 01 — CORREDOR LESTE</span>
+              </div>
+              <div class="osd-badge" id="osd-timestamp">03:00:00 AM</div>
+            </div>
+
+            <!-- OSD Inferior -->
+            <div class="cctv-osd-footer">
+              <div id="osd-signal">SIGNAL: 98% [NOMINAL]</div>
+              <div id="osd-phase-tag">SETOR ATIVO: NÍVEL 1</div>
+            </div>
+
+            <!-- Notificação Tática OSD -->
+            <div class="osd-alert-card" id="osd-alert-card">
+              ANOMALIA REPORTADA
+            </div>
+
+          </div>
+        </div>
+
+      </section>
+
+      <!-- PAINEL LATERAL DE CONTROLE DE SEGURANÇA -->
+      <aside class="cctv-control-station" aria-label="Console Nightwatch">
+        
+        <div class="station-header">
+          <div class="station-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            NIGHTWATCH <span>SECURITY</span>
+          </div>
+          <div class="station-sub">ESTAÇÃO CENTRAL DE CFTV // PROTOCOLO 03:00</div>
+        </div>
+
+        <!-- Matriz de Seleção de Câmeras -->
+        <div class="camera-matrix-box">
+          <div class="section-label">MATRIZ DE CÂMERAS DISPONÍVEIS</div>
+          <div class="cam-buttons-grid">
+            <button class="btn-cam active" id="btn-cam-1" type="button" data-cam="1">
+              <span>CAM 01</span>
+              <span class="cam-status-led"></span>
+            </button>
+            <button class="btn-cam" id="btn-cam-2" type="button" data-cam="2" disabled>
+              <span>CAM 02</span>
+              <span class="cam-status-led"></span>
+            </button>
+            <button class="btn-cam" id="btn-cam-3" type="button" data-cam="3" disabled>
+              <span>CAM 03</span>
+              <span class="cam-status-led"></span>
+            </button>
+            <button class="btn-cam" id="btn-cam-4" type="button" data-cam="4" disabled>
+              <span>CAM 04</span>
+              <span class="cam-status-led"></span>
+            </button>
+            <button class="btn-cam" id="btn-cam-5" type="button" data-cam="5" disabled style="grid-column: span 2;">
+              <span>CAM 05 — SECURITY MATRIX</span>
+              <span class="cam-status-led"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Status do Turno -->
+        <div class="status-cards-row">
+          <div class="info-card">
+            <span class="card-label">TURNO NOTURNO</span>
+            <span class="card-val highlight" id="ui-shift-progress">FASE 1 / 5</span>
+          </div>
+          <div class="info-card">
+            <span class="card-label">ANOMALIAS EXPURGADAS</span>
+            <span class="card-val" id="ui-anomalies-count">0 / 2</span>
+          </div>
+        </div>
+
+        <!-- Tensão do Setor -->
+        <div class="tension-meter-card">
+          <div class="tension-header">
+            <span>INSTABILIDADE DO SISTEMA</span>
+            <span id="ui-tension-val">BAIXA</span>
+          </div>
+          <div class="tension-bar-track">
+            <div class="tension-bar-fill" id="ui-tension-bar"></div>
+          </div>
+        </div>
+
+        <!-- Log de Eventos em Tempo Real -->
+        <div class="log-terminal" id="log-terminal">
+          <div class="log-line">[03:00:00] PROTOCOLO DE SEGURANÇA INICIALIZADO.</div>
+          <div class="log-line">[03:00:01] CÂMERA 01 CONECTADA. MONITORANDO.</div>
+        </div>
+
+        <!-- Botão de Ação: REPORTAR ANOMALIA -->
+        <button class="btn-action-report" id="btn-report-anomaly" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+          </svg>
+          REPORTAR ANOMALIA
+        </button>
+
+        <!-- Controles Secundários -->
+        <div class="utility-row">
+          <button class="btn-util" id="btn-audio-toggle" type="button">
+            <span id="audio-icon">🔊</span>
+            <span id="audio-label">SOM: ON</span>
+          </button>
+          <div class="info-card" style="padding: 4px 8px; flex: 1; justify-content: center;">
+            <span class="card-label">FALSOS ALARMES</span>
+            <span class="card-val danger" id="ui-errors-count">0 / 3</span>
+          </div>
+        </div>
+
+      </aside>
+
+    </main>
+
+    <!-- TELA INICIAL (BRIEFING DE SEGURANÇA) -->
+    <div class="overlay-backdrop" id="screen-title">
+      <div class="dossier-panel">
+        <div style="font-size: 11px; letter-spacing: 3px; color: var(--cctv-red); font-weight: bold;">
+          CONFIDENCIAL // OPERAÇÕES NOTURNAS
+        </div>
+        <h1 class="game-hero-title">TURNO DA MADRUGADA</h1>
+        <p class="game-motto">"Você não deveria estar aqui depois das 03:00."</p>
+
+        <div class="briefing-box">
+          <strong>INSTRUÇÕES DO POSTO DE VIGILÂNCIA:</strong><br>
+          • Você está sozinho no edifício. Seu dever é monitorar as câmeras de CFTV.<br>
+          • Observe atentamente. <strong>Anomalias não são óbvias</strong>: sombras fugazes, portas destravadas, silhuetas distantes ou entidades que mudam quando você troca de câmera.<br>
+          • Ao perceber algo suspeito, clique em <strong>REPORTAR ANOMALIA</strong> na câmera correta.<br>
+          • Cuidado com falsos alarmes: após 3 relatórios inválidos, a contenção falha.<br>
+          • <em>Algo no prédio está ciente de que está sendo observado.</em>
+        </div>
+
+        <button class="btn-cta" id="btn-start-game" type="button">ASSUMIR POSTO (03:00)</button>
+
+        <div style="font-size: 11px; color: var(--text-muted); letter-spacing: 1.5px;">
+          NIGHTWATCH SECURITY // SINAL CFTV ESTABILIZADO
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA DE JUMPSCARE REALISTA CONTEXTUALIZADO -->
+    <div id="jumpscare-modal">
+      <div class="jumpscare-viewport">
+        <img class="jumpscare-creature-photo" id="jumpscare-photo" src="assets/rooms/cam3_creature.jpg" alt="Presença Fatal">
+        <div class="crt-scanlines"></div>
+        <div class="crt-vignette"></div>
+      </div>
+      <div class="jumpscare-caption-box">
+        <div class="jumpscare-title">VOCÊ FOI ENCONTRADO</div>
+        <button class="btn-cta" id="btn-restart-gameover" type="button">
+          REINICIAR TURNO
+        </button>
+      </div>
+    </div>
+
+    <!-- TELA DE EPÍLOGO NARRATIVO (VITÓRIA) -->
+    <div id="epilogue-screen">
+      <div style="font-size: 14px; color: var(--cctv-green); letter-spacing: 3px; margin-bottom: 20px;" id="epilogue-phase-1">
+        TURNO CONCLUÍDO // 03:59:59
+      </div>
+      <div style="font-size: 28px; font-weight: bold; color: #fff; letter-spacing: 4px; margin-bottom: 25px;" id="epilogue-phase-2">
+        VOCÊ SOBREVIVEU À MADRUGADA.
+      </div>
+
+      <div style="max-width: 520px; font-size: 13px; color: #94a3b8; line-height: 1.8; margin-bottom: 30px; display: none;" id="epilogue-narrative">
+        [04:00:00 AM] O sinal das câmeras começou a sofrer interferência estática severa...<br>
+        <span style="color: var(--cctv-red); font-weight: bold;">CÂMERA 01 — MOVIMENTO DETECTADO NO CORREDOR.</span><br>
+        O operador da central de segurança não foi encontrado na cabine.
+      </div>
+
+      <button class="btn-cta" id="btn-play-again" type="button" style="display: none;">
+        JOGAR NOVAMENTE
+      </button>
+    </div>
+
+  </div>
+
+  <!-- MOTOR COMPLETO DO JOGO EM JAVASCRIPT ES6+ -->
+  <script>
+    /**
+     * =========================================================================
+     * TURNO DA MADRUGADA — MOTOR DE HORROR PSICOLÓGICO CCTV (ES6)
+     * =========================================================================
+     * Desenvolvido para rodar 100% nativamente no navegador, sem frameworks.
+     * Principais subsistemas:
+     * 1. AudioSynthesizer: Áudio atmosférico procedural via Web Audio API
+     * 2. CCTVNoiseGenerator: Estática em Canvas otimizada e ultra-leve
+     * 3. StalkerEngine: Inteligência de stalker orgânico e anomalias sutis
+     * 4. TensionSystem: Instabilidade de sinal, glitches e interferência
+     * 5. ProgressiveCameras: Desbloqueio progressivo de CAM 01 até CAM 05
+     */
+
+    // --- 1. SÍNTESE DE ÁUDIO PROCEDURAL (WEB AUDIO API) ---
+    class AtmosphericAudioEngine {
+      constructor() {
+        this.ctx = null;
+        this.isMuted = false;
+        this.masterGain = null;
+        this.humOsc = null;
+        this.heartbeatTimer = null;
+        this.tensionLevel = 0; // 0 to 100
+      }
+
+      init() {
+        if (this.ctx) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.15, this.ctx.currentTime);
+        this.masterGain.connect(this.ctx.destination);
+
+        // Zumbido elétrico de chão (60Hz ground loop) + filtro passa-baixa
+        this.humOsc = this.ctx.createOscillator();
+        this.humOsc.type = 'sawtooth';
+        this.humOsc.frequency.setValueAtTime(58, this.ctx.currentTime);
+
+        const humFilter = this.ctx.createBiquadFilter();
+        humFilter.type = 'lowpass';
+        humFilter.frequency.setValueAtTime(110, this.ctx.currentTime);
+
+        this.humOsc.connect(humFilter);
+        humFilter.connect(this.masterGain);
+        this.humOsc.start();
+
+        // Estática contínua de fita analógica (tape hiss)
+        this.startTapeHiss();
+        this.startHeartbeatLoop();
+      }
+
+      startTapeHiss() {
+        if (!this.ctx) return;
+        const bufferSize = this.ctx.sampleRate * 2;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * 0.025;
+        }
+
+        const hiss = this.ctx.createBufferSource();
+        hiss.buffer = buffer;
+        hiss.loop = true;
+
+        const hissFilter = this.ctx.createBiquadFilter();
+        hissFilter.type = 'bandpass';
+        hissFilter.frequency.setValueAtTime(1200, this.ctx.currentTime);
+        hissFilter.Q.setValueAtTime(1.2, this.ctx.currentTime);
+
+        hiss.connect(hissFilter);
+        hissFilter.connect(this.masterGain);
+        hiss.start();
+      }
+
+      toggleMute() {
+        this.isMuted = !this.isMuted;
+        if (this.masterGain && this.ctx) {
+          this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.15, this.ctx.currentTime);
+        }
+        return this.isMuted;
+      }
+
+      playCamSwitchClick() {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        // Clique mecânico de relé analógico
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.04);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.04);
+      }
+
+      playReportLogBeep() {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(740, now);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+
+      playAnomalyConfirmed() {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        [440, 554, 659].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.1, now + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.35);
+        });
+      }
+
+      playReportInvalid() {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(95, now);
+        osc.frequency.exponentialRampToValueAtTime(55, now + 0.25);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+
+      playStaticBurst() {
+        if (!this.ctx || this.isMuted) return;
+        const now = this.ctx.currentTime;
+        const buffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.3, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * 0.15;
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buffer;
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+        src.connect(gain);
+        gain.connect(this.ctx.destination);
+        src.start(now);
+      }
+
+      startHeartbeatLoop() {
+        const beat = () => {
+          if (!this.ctx || this.isMuted) return;
+          if (this.tensionLevel > 30) {
+            const now = this.ctx.currentTime;
+            // Lub-dub
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(60, now);
+            osc.frequency.exponentialRampToValueAtTime(35, now + 0.14);
+            gain.gain.setValueAtTime(0.15 + (this.tensionLevel / 100) * 0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.14);
+          }
+          const nextInterval = Math.max(550, 1400 - (this.tensionLevel * 9));
+          this.heartbeatTimer = setTimeout(beat, nextInterval);
+        };
+        beat();
+      }
+
+      playJumpscareScreech() {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Explosão maciça de ruído + harmônicos dissonantes
+        const buffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 1.5, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+          data[i] = (Math.random() * 2 - 1) * 0.8;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.6, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+        noise.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        noise.start(now);
+
+        // Agudos lancinantes desarmônicos
+        [830, 890, 1150, 310].forEach(f => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(f, now);
+          osc.frequency.exponentialRampToValueAtTime(f * 0.5, now + 1.1);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.1);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 1.1);
+        });
+      }
+    }
+
+    // --- 2. GERADOR DE ESTÁTICA EM CANVAS (LEVE E OTIMIZADO) ---
+    class CCTVStaticCanvas {
+      constructor(canvasId) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d');
+        this.fps = 22;
+        this.lastTime = 0;
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+        this.render = this.render.bind(this);
+        requestAnimationFrame(this.render);
+      }
+
+      resize() {
+        this.canvas.width = Math.floor(window.innerWidth / 4);
+        this.canvas.height = Math.floor(window.innerHeight / 4);
+      }
+
+      render(t) {
+        requestAnimationFrame(this.render);
+        if (t - this.lastTime < 1000 / this.fps) return;
+        this.lastTime = t;
+
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        if (!w || !h) return;
+
+        const imgData = this.ctx.createImageData(w, h);
+        const buf = new Uint32Array(imgData.data.buffer);
+        const len = buf.length;
+
+        for (let i = 0; i < len; i++) {
+          if (Math.random() < 0.22) {
+            const val = (Math.random() * 255) | 0;
+            buf[i] = (255 << 24) | (val << 16) | (val << 8) | val;
+          }
+        }
+        this.ctx.putImageData(imgData, 0, 0);
+      }
+    }
+
+    // --- 3. CONFIGURAÇÃO DAS 5 CÂMERAS E ANOMALIAS REAIS ---
+    const CAMERAS_DATABASE = {
+      1: {
+        id: 1,
+        name: "CAM 01 — CORREDOR LESTE",
+        normalImg: "assets/rooms/cam1_normal.jpg",
+        anomalyImg: "assets/rooms/cam1_shadow.jpg",
+        description: "Corredor residencial de piso gasto e paredes descascadas. Lâmpadas fluorescentes.",
+        anomalies: [
+          {
+            id: "cam1_distant_shadow",
+            type: "fleeting",
+            duration: 8000,
+            logMsg: "SOMBRA HUMANOIDE PARADA NO FUNDO DO CORREDOR LESTE.",
+            audioCue: true
+          }
+        ]
+      },
+      2: {
+        id: 2,
+        name: "CAM 02 — ADMINISTRAÇÃO",
+        normalImg: "assets/rooms/cam2_normal.jpg",
+        anomalyImg: "assets/rooms/cam2_anomaly.jpg",
+        description: "Escritório corporativo dos anos 90. Janela sob chuva pesada, cadeira giratória e CRT.",
+        anomalies: [
+          {
+            id: "cam2_window_watcher",
+            type: "subtle_presence",
+            duration: 12000,
+            logMsg: "CADEIRA DESLOCADA. SILHUETA ALTA PRESSIONADA CONTRA O VIDRO DA JANELA.",
+            audioCue: true
+          }
+        ]
+      },
+      3: {
+        id: 3,
+        name: "CAM 03 — SUBSOLO",
+        normalImg: "assets/rooms/cam3_normal.jpg",
+        anomalyImg: "assets/rooms/cam3_creature.jpg",
+        description: "Porão industrial inundado, canos oxidados e portas blindadas acorrentadas.",
+        anomalies: [
+          {
+            id: "cam3_stalker_emergence",
+            type: "creature_lurker",
+            duration: 14000,
+            logMsg: "CRIATURA HUMANOIDE EMACIADA COM BRAÇOS ALONGADOS VISÍVEL NO SUBSOLO.",
+            audioCue: true
+          }
+        ]
+      },
+      4: {
+        id: 4,
+        name: "CAM 04 — QUARTO 13",
+        normalImg: "assets/rooms/cam4_normal.jpg",
+        anomalyImg: "assets/rooms/cam4_normal.jpg", // Anomalia criada dinamicamente no espelho
+        description: "Quarto vitoriano em decomposição. Espelho vertical de moldura ornamentada e cama de ferro.",
+        anomalies: [
+          {
+            id: "cam4_mirror_specter",
+            type: "mirror_distortion",
+            duration: 11000,
+            logMsg: "REFLEXO NO ESPELHO RETÉM UMA PRESENÇA MESMO COM O QUARTO APARENTEMENTE VAZIO.",
+            audioCue: true
+          }
+        ]
+      },
+      5: {
+        id: 5,
+        name: "CAM 05 — SECURITY MATRIX",
+        normalImg: "assets/rooms/cam2_anomaly.jpg", // Sala de controle com o operador vigiado
+        anomalyImg: "assets/rooms/cam3_creature.jpg",
+        description: "Central de monitoramento da segurança. Os monitores exibem a própria cabine por trás.",
+        anomalies: [
+          {
+            id: "cam5_operator_stalker",
+            type: "direct_encounter",
+            duration: 16000,
+            logMsg: "A ENTIDADE ESTÁ DIRETAMENTE ATRÁS DA CABINE DO OPERADOR.",
+            audioCue: true
+          }
+        ]
+      }
+    };
+
+    // Fases e objetivos de progressão
+    const PHASES_CONFIG = [
+      {
+        phaseNum: 1,
+        title: "FASE 1 — CORREDOR LESTE",
+        unlockedCams: [1],
+        requiredAnomalies: 2,
+        tensionBase: 10,
+        signalNominal: 98
+      },
+      {
+        phaseNum: 2,
+        title: "FASE 2 — ADMINISTRAÇÃO",
+        unlockedCams: [1, 2],
+        requiredAnomalies: 3,
+        tensionBase: 25,
+        signalNominal: 89
+      },
+      {
+        phaseNum: 3,
+        title: "FASE 3 — SUBSOLO",
+        unlockedCams: [1, 2, 3],
+        requiredAnomalies: 4,
+        tensionBase: 45,
+        signalNominal: 76
+      },
+      {
+        phaseNum: 4,
+        title: "FASE 4 — QUARTO 13",
+        unlockedCams: [1, 2, 3, 4],
+        requiredAnomalies: 5,
+        tensionBase: 65,
+        signalNominal: 64
+      },
+      {
+        phaseNum: 5,
+        title: "FASE 5 — CENTRAL DE CONTROLE",
+        unlockedCams: [1, 2, 3, 4, 5],
+        requiredAnomalies: 6,
+        tensionBase: 85,
+        signalNominal: 48
+      }
+    ];
+
+    // --- 4. CONTROLADOR CENTRAL DO JOGO ---
+    class NightShiftGameController {
+      constructor() {
+        this.audio = new AtmosphericAudioEngine();
+        this.staticCanvas = new CCTVStaticCanvas("static-canvas");
+
+        // Estado do Jogo
+        this.currentPhaseIdx = 0;
+        this.currentCamId = 1;
+        this.anomaliesExpurgated = 0;
+        this.falseAlarms = 0;
+        this.maxFalseAlarms = 3;
+        this.tension = 10;
+        this.isReporting = false;
+        this.isGameOver = false;
+
+        // Anomalias Ativas no momento: Map<camId, anomalyObj>
+        this.activeCamAnomalies = new Map();
+        this.anomalySpawnTimers = [];
+        this.stalkerCheckInterval = null;
+
+        // Elementos DOM
+        this.cameraFeedImg = document.getElementById("camera-feed-img");
+        this.anomalyFeedImg = document.getElementById("anomaly-feed-img");
+        this.osdCamName = document.getElementById("osd-cam-name");
+        this.osdTimestamp = document.getElementById("osd-timestamp");
+        this.osdSignal = document.getElementById("osd-signal");
+        this.osdPhaseTag = document.getElementById("osd-phase-tag");
+        this.osdAlertCard = document.getElementById("osd-alert-card");
+        this.uiShiftProgress = document.getElementById("ui-shift-progress");
+        this.uiAnomaliesCount = document.getElementById("ui-anomalies-count");
+        this.uiTensionVal = document.getElementById("ui-tension-val");
+        this.uiTensionBar = document.getElementById("ui-tension-bar");
+        this.uiErrorsCount = document.getElementById("ui-errors-count");
+        this.logTerminal = document.getElementById("log-terminal");
+        this.cctvViewport = document.getElementById("cctv-viewport");
+
+        // Botões
+        this.btnReport = document.getElementById("btn-report-anomaly");
+        this.btnAudio = document.getElementById("btn-audio-toggle");
+        this.audioIcon = document.getElementById("audio-icon");
+        this.audioLabel = document.getElementById("audio-label");
+        this.camButtons = document.querySelectorAll(".btn-cam");
+
+        // Telas Overlays
+        this.screenTitle = document.getElementById("screen-title");
+        this.btnStartGame = document.getElementById("btn-start-game");
+        this.jumpscareModal = document.getElementById("jumpscare-modal");
+        this.btnRestartGameOver = document.getElementById("btn-restart-gameover");
+        this.epilogueScreen = document.getElementById("epilogue-screen");
+        this.btnPlayAgain = document.getElementById("btn-play-again");
+
+        this.initEvents();
+        this.startClock();
+      }
+
+      initEvents() {
+        // Iniciar Jogo
+        this.btnStartGame.addEventListener("pointerdown", () => {
+          this.audio.init();
+          this.audio.playCamSwitchClick();
+          this.screenTitle.style.display = "none";
+          this.startPhase(0);
+        });
+
+        // Alternância de Som
+        this.btnAudio.addEventListener("pointerdown", () => {
+          this.audio.init();
+          const muted = this.audio.toggleMute();
+          this.audioIcon.textContent = muted ? "🔇" : "🔊";
+          this.audioLabel.textContent = muted ? "SOM: OFF" : "SOM: ON";
+        });
+
+        // Clique nos botões de Câmera
+        this.camButtons.forEach(btn => {
+          btn.addEventListener("pointerdown", () => {
+            const camId = parseInt(btn.dataset.cam, 10);
+            if (!btn.disabled && camId !== this.currentCamId) {
+              this.switchCamera(camId);
+            }
+          });
+        });
+
+        // Botão de Reportar Anomalia
+        this.btnReport.addEventListener("pointerdown", () => {
+          this.handleReportAnomaly();
+        });
+
+        // Reiniciar após Game Over
+        this.btnRestartGameOver.addEventListener("pointerdown", () => {
+          this.jumpscareModal.style.display = "none";
+          this.restartGame();
+        });
+
+        // Jogar novamente após Epílogo
+        this.btnPlayAgain.addEventListener("pointerdown", () => {
+          this.epilogueScreen.style.display = "none";
+          this.restartGame();
+        });
+      }
+
+      // --- CICLO DO RELÓGIO DIGITAL CFTV (03:00 até 04:00) ---
+      startClock() {
+        let h = 3, m = 0, s = 0;
+        setInterval(() => {
+          s++;
+          if (s >= 60) { s = 0; m++; }
+          if (m >= 60) { m = 0; h++; }
+          const hh = String(h).padStart(2, '0');
+          const mm = String(m).padStart(2, '0');
+          const ss = String(s).padStart(2, '0');
+          this.osdTimestamp.textContent = `${hh}:${mm}:${ss} AM`;
+        }, 1000);
+      }
+
+      // --- INÍCIO DE CADA FASE ---
+      startPhase(phaseIdx) {
+        this.currentPhaseIdx = phaseIdx;
+        const phase = PHASES_CONFIG[phaseIdx];
+        this.anomaliesExpurgated = 0;
+        this.uiAnomaliesCount.textContent = `0 / ${phase.requiredAnomalies}`;
+        this.uiShiftProgress.textContent = `FASE ${phase.phaseNum} / 5`;
+        this.osdPhaseTag.textContent = `SETOR ATIVO: NÍVEL ${phase.phaseNum}`;
+
+        this.setTension(phase.tensionBase);
+        this.updateUnlockedCameras(phase.unlockedCams);
+        this.switchCamera(phase.unlockedCams[0]);
+
+        this.addLog(`[FASE ${phase.phaseNum}] ${phase.title} INICIALIZADA.`);
+        this.addLog(`[DIRETRIZ] DETECTAR E EXPURGAR ${phase.requiredAnomalies} ANOMALIAS.`);
+
+        this.clearTimers();
+        this.scheduleOrganicAnomalies(phase);
+      }
+
+      updateUnlockedCameras(unlockedIds) {
+        this.camButtons.forEach(btn => {
+          const id = parseInt(btn.dataset.cam, 10);
+          if (unlockedIds.includes(id)) {
+            btn.disabled = false;
+          } else {
+            btn.disabled = true;
+          }
+        });
+      }
+
+      // --- ALTERNÂNCIA DE CÂMERAS COM ESTÁTICA E INTERFERÊNCIA ---
+      switchCamera(camId) {
+        this.currentCamId = camId;
+        const camData = CAMERAS_DATABASE[camId];
+
+        this.audio.playCamSwitchClick();
+        this.audio.playStaticBurst();
+
+        // Atualiza botões
+        this.camButtons.forEach(b => {
+          b.classList.toggle("active", parseInt(b.dataset.cam, 10) === camId);
+        });
+
+        // Efeito de glitch e corte de estática
+        this.cctvViewport.classList.add("glitch-flash");
+        setTimeout(() => this.cctvViewport.classList.remove("glitch-flash"), 250);
+
+        // Atualiza OSD
+        this.osdCamName.textContent = camData.name;
+        this.cameraFeedImg.src = camData.normalImg;
+
+        // Se houver anomalia ativa nesta câmera, exibe a camada anômala
+        const activeAnomaly = this.activeCamAnomalies.get(camId);
+        if (activeAnomaly) {
+          this.showAnomalyVisual(camId, activeAnomaly);
+        } else {
+          this.hideAnomalyVisual();
+        }
+
+        // Tensão inteligente da criatura: trocar de câmera pode mover o stalker
+        this.handleStalkerObservation(camId);
+      }
+
+      showAnomalyVisual(camId, anomaly) {
+        const camData = CAMERAS_DATABASE[camId];
+        this.anomalyFeedImg.src = camData.anomalyImg;
+        this.anomalyFeedImg.classList.add("visible");
+
+        // Se for anomalia de espelho na Cam 4, aplica filtro de reflexo
+        if (camId === 4) {
+          this.cameraFeedImg.style.filter = "contrast(130%) brightness(80%) hue-rotate(180deg)";
+        } else {
+          this.cameraFeedImg.style.filter = "contrast(115%) brightness(92%) saturate(85%)";
+        }
+      }
+
+      hideAnomalyVisual() {
+        this.anomalyFeedImg.classList.remove("visible");
+        this.cameraFeedImg.style.filter = "contrast(115%) brightness(92%) saturate(85%)";
+      }
+
+      // --- AGENDADOR DE ANOMALIAS PSICOLÓGICAS ORGÂNICAS ---
+      scheduleOrganicAnomalies(phase) {
+        const availableCams = phase.unlockedCams;
+
+        // Agendamento com intervalos irregulares para gerar incerteza
+        const queueNext = () => {
+          if (this.isGameOver) return;
+          const randomDelay = 6000 + Math.random() * 8000;
+
+          const t = setTimeout(() => {
+            this.spawnRandomAnomaly(availableCams);
+            queueNext();
+          }, randomDelay);
+          this.anomalySpawnTimers.push(t);
+        };
+
+        queueNext();
+      }
+
+      spawnRandomAnomaly(availableCams) {
+        if (this.isGameOver) return;
+
+        // Escolhe uma câmera desbloqueada que não tenha anomalia ativa
+        const freeCams = availableCams.filter(id => !this.activeCamAnomalies.has(id));
+        if (freeCams.length === 0) return;
+
+        const targetCam = freeCams[Math.floor(Math.random() * freeCams.length)];
+        const camData = CAMERAS_DATABASE[targetCam];
+        const anomaly = camData.anomalies[0];
+
+        this.activeCamAnomalies.set(targetCam, anomaly);
+
+        // Se a câmera atual for a mesma, atualiza imagem imediatamente
+        if (targetCam === this.currentCamId) {
+          this.showAnomalyVisual(targetCam, anomaly);
+          this.audio.playStaticBurst();
+          this.cctvViewport.classList.add("camera-shake");
+          setTimeout(() => this.cctvViewport.classList.remove("camera-shake"), 350);
+        }
+
+        this.addLog(`[SENSOR CFTV] INTERFERÊNCIA DETECTADA EM SETOR AUTOMÁTICO.`);
+        this.adjustTension(8);
+
+        // Expiração automática da anomalia se não for pega
+        setTimeout(() => {
+          if (this.activeCamAnomalies.get(targetCam) === anomaly) {
+            this.activeCamAnomalies.delete(targetCam);
+            if (this.currentCamId === targetCam) {
+              this.hideAnomalyVisual();
+            }
+          }
+        }, anomaly.duration);
+      }
+
+      // --- MECÂNICA DE REPORTAR ANOMALIA COM DELAY TÁTICO ---
+      handleReportAnomaly() {
+        if (this.isGameOver || this.isReporting) return;
+        this.isReporting = true;
+        this.btnReport.disabled = true;
+
+        this.audio.playReportLogBeep();
+        this.showAlertOSD("REGISTRANDO RELATÓRIO...", "pending");
+        this.addLog(`[ANOMALY REPORT LOGGED] ANALISANDO PARÂMETROS DE ${CAMERAS_DATABASE[this.currentCamId].name}...`);
+
+        // Delay de 1.4s de suspense antes da confirmação
+        setTimeout(() => {
+          this.isReporting = false;
+          this.btnReport.disabled = false;
+
+          const activeAnomaly = this.activeCamAnomalies.get(this.currentCamId);
+
+          if (activeAnomaly) {
+            // SUCESSO: ANOMALIA CONFIRMADA
+            this.activeCamAnomalies.delete(this.currentCamId);
+            this.hideAnomalyVisual();
+            this.anomaliesExpurgated++;
+
+            const phase = PHASES_CONFIG[this.currentPhaseIdx];
+            this.uiAnomaliesCount.textContent = `${this.anomaliesExpurgated} / ${phase.requiredAnomalies}`;
+
+            this.showAlertOSD("ANOMALIA CONFIRMADA", "verified");
+            this.audio.playAnomalyConfirmed();
+            this.addLog(`[INCIDENTE ARQUIVADO] ${activeAnomaly.logMsg}`, "ok");
+
+            this.adjustTension(-12);
+
+            // Verifica término da fase
+            if (this.anomaliesExpurgated >= phase.requiredAnomalies) {
+              this.handlePhaseCompleted();
+            }
+
+          } else {
+            // ERRO: RELATÓRIO INVÁLIDO
+            this.falseAlarms++;
+            this.uiErrorsCount.textContent = `${this.falseAlarms} / ${this.maxFalseAlarms}`;
+
+            this.showAlertOSD("RELATÓRIO INVÁLIDO", "invalid");
+            this.audio.playReportInvalid();
+            this.addLog(`[FALSO ALARME] NENHUMA DISCREPÂNCIA FÍSICA DETECTADA NA CÂMERA ATUAL.`, "err");
+
+            this.adjustTension(20);
+            this.cctvViewport.classList.add("camera-shake");
+            setTimeout(() => this.cctvViewport.classList.remove("camera-shake"), 400);
+
+            // Se atingir 3 erros -> Game Over contextualizado
+            if (this.falseAlarms >= this.maxFalseAlarms) {
+              this.triggerGameOver("FALHA CRÍTICA DE ISOLAMENTO. OS FALSOS ALARMES ATRAÍRAM A ENTIDADE.");
+            }
+          }
+        }, 1300);
+      }
+
+      showAlertOSD(msg, statusClass) {
+        this.osdAlertCard.textContent = msg;
+        this.osdAlertCard.className = `osd-alert-card ${statusClass} show`;
+        setTimeout(() => {
+          this.osdAlertCard.classList.remove("show");
+        }, 1600);
+      }
+
+      addLog(msg, type = "normal") {
+        const line = document.createElement("div");
+        line.className = `log-line ${type === 'ok' ? 'log-ok' : type === 'err' ? 'log-err' : ''}`;
+        line.textContent = msg;
+        this.logTerminal.appendChild(line);
+        this.logTerminal.scrollTop = this.logTerminal.scrollHeight;
+      }
+
+      // --- SISTEMA DE TENSÃO E INSTABILIDADE PSICOLÓGICA ---
+      adjustTension(delta) {
+        this.setTension(this.tension + delta);
+      }
+
+      setTension(val) {
+        this.tension = Math.max(5, Math.min(100, val));
+        this.uiTensionBar.style.width = `${this.tension}%`;
+        this.audio.tensionLevel = this.tension;
+
+        let label = "BAIXA";
+        if (this.tension > 75) label = "CRÍTICA";
+        else if (this.tension > 45) label = "ELEVADA";
+        else if (this.tension > 25) label = "MODERADA";
+        this.uiTensionVal.textContent = label;
+
+        // Degradação de sinal de acordo com a tensão
+        const phase = PHASES_CONFIG[this.currentPhaseIdx];
+        const currentSignal = Math.max(12, Math.floor(phase.signalNominal - (this.tension * 0.4)));
+        this.osdSignal.textContent = `SIGNAL: ${currentSignal}% [${currentSignal < 40 ? 'INSTÁVEL' : 'NOMINAL'}]`;
+
+        // Ruído estático aumenta com a tensão
+        const canvas = document.getElementById("static-canvas");
+        if (canvas) {
+          canvas.style.opacity = (0.12 + (this.tension / 100) * 0.35).toFixed(2);
+        }
+      }
+
+      handleStalkerObservation(camId) {
+        // Se o jogador permanecer na mesma câmera de alto risco (Cam 3 ou 5) por muito tempo
+        if (camId === 3 || camId === 5) {
+          this.adjustTension(5);
+        }
+      }
+
+      // --- TRANSIÇÃO DE FASES E VITÓRIA FINAL ---
+      handlePhaseCompleted() {
+        this.clearTimers();
+        const nextIdx = this.currentPhaseIdx + 1;
+
+        if (nextIdx < PHASES_CONFIG.length) {
+          this.addLog(`[SETOR LIBERADO] PROTOCOLO AVANÇANDO PARA A PRÓXIMA SEÇÃO...`, "ok");
+          this.showAlertOSD("SETOR EXPURGADO // AVANÇANDO", "verified");
+          this.audio.playAnomalyConfirmed();
+
+          setTimeout(() => {
+            this.startPhase(nextIdx);
+          }, 2600);
+        } else {
+          // VITÓRIA NARRATIVA: TODAS AS 5 FASES COMPLETADAS
+          this.triggerEpilogueEnding();
+        }
+      }
+
+      // --- JUMPSCARE CONTEXTUALIZADO & GAME OVER ---
+      triggerGameOver(reason) {
+        this.isGameOver = true;
+        this.clearTimers();
+
+        // 1. Apaga a tela subitamente (corte para preto)
+        this.jumpscareModal.style.display = "flex";
+        const photo = document.getElementById("jumpscare-photo");
+        photo.style.opacity = "0";
+
+        // Escolhe a criatura realista
+        photo.src = this.currentPhaseIdx >= 2 ? "assets/rooms/cam3_creature.jpg" : "assets/rooms/cam1_shadow.jpg";
+
+        // 2. Após 0.8s de silêncio aterrador: Jumpscare brutal
+        setTimeout(() => {
+          photo.style.opacity = "1";
+          photo.classList.add("jumpscare-violent-fx");
+          this.audio.playJumpscareScreech();
+        }, 700);
+      }
+
+      // --- EPÍLOGO FINAL (REGRAS 19: 03:59:59 -> 04:00:00 -> MOVIMENTO DETECTADO) ---
+      triggerEpilogueEnding() {
+        this.isGameOver = true;
+        this.clearTimers();
+
+        this.epilogueScreen.style.display = "flex";
+        const p1 = document.getElementById("epilogue-phase-1");
+        const p2 = document.getElementById("epilogue-phase-2");
+        const narrative = document.getElementById("epilogue-narrative");
+        const btnPlay = document.getElementById("btn-play-again");
+
+        p1.textContent = "TURNO FINALIZADO // 03:59:59";
+        p2.textContent = "VOCÊ SOBREVIVEU À MADRUGADA.";
+
+        // Sequência cinematográfica
+        setTimeout(() => {
+          p1.textContent = "04:00:00 AM";
+          p2.textContent = "CÂMERA 01 — MOVIMENTO DETECTADO";
+          p2.style.color = "var(--cctv-red)";
+          this.audio.playStaticBurst();
+        }, 3000);
+
+        setTimeout(() => {
+          narrative.style.display = "block";
+          btnPlay.style.display = "inline-block";
+        }, 5500);
+      }
+
+      clearTimers() {
+        this.anomalySpawnTimers.forEach(t => clearTimeout(t));
+        this.anomalySpawnTimers = [];
+      }
+
+      restartGame() {
+        this.isGameOver = false;
+        this.falseAlarms = 0;
+        this.uiErrorsCount.textContent = `0 / ${this.maxFalseAlarms}`;
+        this.activeCamAnomalies.clear();
+        this.hideAnomalyVisual();
+
+        const photo = document.getElementById("jumpscare-photo");
+        photo.classList.remove("jumpscare-violent-fx");
+
+        this.startPhase(0);
+      }
+    }
+
+    // Inicialização ao carregar a página
+    window.addEventListener("DOMContentLoaded", () => {
+      window.game = new NightShiftGameController();
+    });
+  </script>
+</body>
+</html>
